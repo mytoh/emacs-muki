@@ -90,6 +90,11 @@
         :buffer "*muki hitbox games*"
         :prompt "Game: "))
 
+;;;###autoload
+(cl-defun muki-hitbox-open-user (user)
+  (interactive "sUser: ")
+  (muki.hitbox:play user))
+
 ;; (muki.hitbox "ninjaikotoba")
 ;; (muki.hitbox:api-json "http://api.hitbox.tv/games?liveonly")
 ;; (helm muki.hitbox:source-games)

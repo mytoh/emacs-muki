@@ -53,8 +53,11 @@
       (cl-letf ((lives .livestream))
         (seq-map
          (lambda (l)
-           (cons (cdr (assoc 'media_user_name l))
-                 l))
+           (cons
+            (format "%s %s"
+                    (cdr (assoc 'media_user_name l))
+                    (cdr (assoc 'media_views l)))
+            l))
          lives)))))
 
 (cl-defun muki.hitbox:action-open-game (candidate)

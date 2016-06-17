@@ -104,6 +104,7 @@
 
 ;; curl -x GET https://api.hitbox.tv/game/dota-2
 ;; curl 'https://api.hitbox.tv/games?liveonly'
+;; http --print b --json 'https://api.hitbox.tv/games?liveonly'
 ;;http://api.hitbox.tv/player/hls/grossgore.m3u8
 
 

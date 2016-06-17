@@ -38,8 +38,11 @@
       (cl-letf ((categories .categories))
         (seq-map
          (lambda (g)
-           (cons (cdr (assoc 'category_name g))
-                 g))
+           (cons
+            (format "%s %s"
+                    (cdr (assoc 'category_name g))
+                    (cdr (assoc 'category_viewers g)))
+            g))
          categories)))))
 
 (cl-defun muki.hitbox:api-lives (game)

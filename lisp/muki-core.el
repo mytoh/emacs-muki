@@ -109,9 +109,9 @@ emacs load path"
   (seq-doseq (f (directory-files parent-dir))
     (cl-letf ((name (expand-file-name f parent-dir)))
       (and (file-directory-p name)
-           (not (equal f ".."))
-           (not (equal f "."))
-           (cl-pushnew name load-path)))))
+         (not (equal f ".."))
+         (not (equal f "."))
+         (cl-pushnew name load-path)))))
 
 ;; kill other buffers
 (cl-defun kill-other-buffers ()
@@ -120,7 +120,7 @@ Don't mess with special buffers."
   (interactive)
   (seq-doseq (buffer (buffer-list))
     (unless (or (eql buffer (current-buffer))
-                (not (buffer-file-name buffer)))
+               (not (buffer-file-name buffer)))
       (kill-buffer buffer))))
 
 
@@ -264,10 +264,10 @@ buffer if the variable `delete-trailing-lines' is non-nil."
         ;; Delete trailing empty lines.
         (goto-char end-marker)
         (when (and (not end)
-                   delete-trailing-lines
-                   ;; Really the end of buffer.
-                   (= (point-max) (1+ (buffer-size)))
-                   (<= (skip-chars-backward "\n") -2))
+                 delete-trailing-lines
+                 ;; Really the end of buffer.
+                 (= (point-max) (1+ (buffer-size)))
+                 (<= (skip-chars-backward "\n") -2))
           (delete-region (1+ (point)) end-marker))
         (set-marker end-marker nil))))
   ;; Return nil for the benefit of `write-file-functions'.
@@ -310,6 +310,38 @@ buffer if the variable `delete-trailing-lines' is non-nil."
                                        (list #'restart-emacs))))
       (sit-for 1)
       (save-buffers-kill-emacs))))
+
+(defun xah-toggle-read-novel-mode ()
+  "Setup current buffer to be suitable for reading long novel/article text.
+
+• Line wrap at word boundaries.
+• Set a right margin.
+• line spacing is increased.
+• variable width font is used.
+
+Call again to toggle back.
+URL `http://ergoemacs.org/emacs/emacs_novel_reading_mode.html'
+Version 2016-01-16"
+  (interactive)
+  (if (null (get this-command 'state-on-p))
+      (progn
+        (set-window-margins
+         nil 0
+         (if (> fill-column (window-body-width))
+             0
+           (progn
+             (- (window-body-width) fill-column))))
+        (variable-pitch-mode 1)
+        (setq line-spacing 0.4)
+        (setq word-wrap t)
+        (put this-command 'state-on-p t))
+    (progn
+      (set-window-margins nil 0 0)
+      (variable-pitch-mode 0)
+      (setq line-spacing nil)
+      (setq word-wrap nil)
+      (put this-command 'state-on-p nil)))
+  (redraw-frame (selected-frame)))
 
 (provide 'muki-core)
 

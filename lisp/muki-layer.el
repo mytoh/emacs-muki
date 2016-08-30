@@ -14,8 +14,8 @@
              (path (expand-file-name
                     (concat cat "/" name)
                     muki-layer:root)))
-    (load-file (expand-file-name
-                "init.el"
+    (load (expand-file-name
+                "init"
                 path))))
 
 (cl-defun muki-layer:load-layers (category names)

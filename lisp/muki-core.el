@@ -59,9 +59,9 @@
 
 (cl-defun muki:add-to-load-path (path)
   (and (file-exists-p path)
-     (cl-pushnew (expand-file-name
-                  (file-name-as-directory path))
-                 load-path)))
+       (cl-pushnew (expand-file-name
+                    (file-name-as-directory path))
+                   load-path)))
 
 ;; (cl-defmacro muki:expand-file-names (&rest names)
 ;;   (cl-labels ((rec (l ns)
@@ -109,9 +109,9 @@ emacs load path"
   (seq-doseq (f (directory-files parent-dir))
     (cl-letf ((name (expand-file-name f parent-dir)))
       (and (file-directory-p name)
-         (not (equal f ".."))
-         (not (equal f "."))
-         (cl-pushnew name load-path)))))
+           (not (equal f ".."))
+           (not (equal f "."))
+           (cl-pushnew name load-path)))))
 
 ;; kill other buffers
 (cl-defun kill-other-buffers ()
@@ -120,7 +120,7 @@ Don't mess with special buffers."
   (interactive)
   (seq-doseq (buffer (buffer-list))
     (unless (or (eql buffer (current-buffer))
-               (not (buffer-file-name buffer)))
+                (not (buffer-file-name buffer)))
       (kill-buffer buffer))))
 
 
@@ -264,10 +264,10 @@ buffer if the variable `delete-trailing-lines' is non-nil."
         ;; Delete trailing empty lines.
         (goto-char end-marker)
         (when (and (not end)
-                 delete-trailing-lines
-                 ;; Really the end of buffer.
-                 (= (point-max) (1+ (buffer-size)))
-                 (<= (skip-chars-backward "\n") -2))
+                   delete-trailing-lines
+                   ;; Really the end of buffer.
+                   (= (point-max) (1+ (buffer-size)))
+                   (<= (skip-chars-backward "\n") -2))
           (delete-region (1+ (point)) end-marker))
         (set-marker end-marker nil))))
   ;; Return nil for the benefit of `write-file-functions'.
@@ -342,6 +342,14 @@ Version 2016-01-16"
       (setq word-wrap nil)
       (put this-command 'state-on-p nil)))
   (redraw-frame (selected-frame)))
+
+
+(defun muki:byte-comp-compile-directory (dir)
+  (interactive "DDir:")
+  (cl-letf ((files (directory-files-recursively
+                    (expand-file-name dir)
+                    "el\\'")))
+    (seq-each #'byte-compile-file files)))
 
 (provide 'muki-core)
 

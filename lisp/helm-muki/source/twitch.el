@@ -8,13 +8,6 @@
   "personal helm command"
   :group 'helm)
 
-(defcustom helm-muki-twitch-stream-format "High"
-  "High
-Medium
-Low
-Mobile"
-  :group 'helm-muki-twitch)
-
 (defcustom helm-muki-twitch-games-limit 100
   "limit number of games candidate")
 
@@ -164,8 +157,6 @@ Mobile"
     (cl-letf ((command (seq-concatenate 'string
                                         "mpv "
                                         " --ytdl=yes "
-                                        ;; " -{ av://lavfi:color -length 1 -} "
-                                        "  --ytdl-format=" helm-muki-twitch-stream-format
                                         " '" url "'"
                                         " &")))
       (start-process-shell-command "helm-muki-twitch" nil command))))

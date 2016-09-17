@@ -9,7 +9,7 @@
               (node-filter (elms target attr)
                 (seq-filter
                  (lambda (elm) (string-equal target
-                                        (xml-get-attribute elm attr)))
+                                             (xml-get-attribute elm attr)))
                  elms)))
     (cl-letf* ((html (with-current-buffer
                          (url-retrieve-synchronously
@@ -49,7 +49,35 @@
                                  (concat "nohup " "mpv "
                                          "\'" cleaned-url "\'"
                                          " &"))))
-
+(cl-defun muki:tumblr-image-url (where)
+  (interactive "sWhere?: ")
+  (cl-labels ((get-id (elm) (xml-get-children elm 'id))
+              (get-div (elm) (xml-get-children elm 'div))
+              (get-img (elm) (xml-get-children elm 'img))
+              (node-filter (elms target attr)
+                (seq-filter
+                 (lambda (elm) (string-equal target
+                                        (xml-get-attribute elm attr)))
+                 elms)))
+    (cl-letf* ((doc (with-current-buffer
+                        (url-retrieve-synchronously
+                         where)
+                      (libxml-parse-html-region
+                       (point-min) (point-max))))
+               (divs (thread-first doc
+                       (xml-get-children 'body)
+                       car
+                       get-div))
+               (url
+                (thread-first divs
+                  (seq-elt 2)
+                  get-div
+                  car
+                  get-img
+                  car
+                  (xml-get-attribute 'data-src))))
+      (kill-new url)
+      (message "copied %s to kill ring" url))))
 
 (provide 'muki-net)
 ;;; muki-net.el ends here

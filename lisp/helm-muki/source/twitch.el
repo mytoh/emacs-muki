@@ -18,6 +18,12 @@
   ()
   "names of game always shown in the games list")
 
+(defcustom helm-muki-twitch-config-file 
+  (expand-file-name
+   "muki/twitch.el"
+   user-emacs-directory)
+  "")
+
 (defface helm-muki-twitch-stream
     '((t :inherit font-lock-variable-name-face))
   "face for helm muki twitch stream name"
@@ -119,7 +125,9 @@
 
 (cl-defun helm-muki-twitch-api-get-json (url)
   (cl-letf ((url-request-extra-headers
-             '(("Accept" . "application/vnd.twitchtv.v3+json")))
+             `(("Accept" . "application/vnd.twitchtv.v3+json")
+               ("Client-ID" . ,(helm-muki-twitch-get-client-id
+                                helm-muki-twitch-config-file))))
             (response-string nil))
     (with-current-buffer (url-retrieve-synchronously url 'silent 'inhibit-cookies)
       (goto-char (point-min))
@@ -130,6 +138,12 @@
       (kill-buffer))
     (json-read-from-string
      response-string)))
+
+(cl-defun helm-muki-twitch-get-client-id (file)
+  (cl-letf ((info (with-temp-buffer
+                    (insert-file-contents-literally file)
+                    (read (buffer-string)))))
+    (glof:get-in info [:twitch :client-id])))
 
 (cl-defun helm-muki-twitch-stream-create-candidates (game-name)
   (cl-letf* ((streams-json-alist

@@ -135,7 +135,7 @@
             (response-string nil))
     (with-current-buffer (url-retrieve-synchronously url 'silent 'inhibit-cookies)
       (goto-char (point-min))
-      (re-search-forward "\n\n")
+      (search-forward "\n\n")
       (setq response-string
             (buffer-substring-no-properties
              (point) (point-max)))

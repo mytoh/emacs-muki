@@ -3,6 +3,7 @@
 ;;; Code:
 
 (require 'map)
+(require 'pcase)
 
 (defgroup helm-muki-twitch nil
   "personal helm command"
@@ -54,22 +55,19 @@
                      `((limit ,helm-muki-twitch-games-limit))))))
 
 (cl-defun helm-muki-twitch-game-names ()
-  (cl-letf* ((games-json-alist
-              (helm-muki-twitch-api-get-json
-               (helm-muki-twitch-game-create-url)))
-             (games (map-elt games-json-alist 'top)))
+  (pcase-let* (((map ('top games))
+                (helm-muki-twitch-api-get-json
+                 (helm-muki-twitch-game-create-url))))
     (seq-map
      (lambda (alist)
-       (let-alist alist
-         (cl-letf ((channels .channels)
-                   (viewers .viewers)
-                   (name .game.name))
-           (cons
-            (format "%s  %s %s"
-                    (propertize name 'face 'helm-muki-twitch-game)
-                    (if channels (number-to-string channels) channels)
-                    (if viewers (number-to-string viewers) viewers))
-            name))))
+       (pcase-let* (((map channels viewers game) alist)
+                    ((map name) game))
+         (cons
+          (format "%s  %s %s"
+                  (propertize name 'face 'helm-muki-twitch-game)
+                  (if channels (number-to-string channels) channels)
+                  (if viewers (number-to-string viewers) viewers))
+          name)))
      games)))
 
 (cl-defun helm-muki-twitch-game-additional-game-names ()
@@ -105,8 +103,8 @@
   ((init :initform #'helm-muki-twitch-game-init)
    (candidates :initform 'helm-muki-twitch-game-candidates)
    (action :initform
-           (helm-make-actions
-            "View Streams" #'helm-muki-twitch-game-action-view-streams))))
+     (helm-make-actions
+      "View Streams" #'helm-muki-twitch-game-action-view-streams))))
 
 (defvar helm-source-muki-twitch
   (helm-make-source (helm-muki-source-name/mark "Game" "🎮")
@@ -150,23 +148,26 @@
     (glof:get-in info [:twitch :client-id])))
 
 (cl-defun helm-muki-twitch-stream-create-candidates (game-name)
-  (cl-letf* ((streams-json-alist
-              (helm-muki-twitch-api-get-json
-               (helm-muki-twitch-stream-create-url game-name)))
-             (streams (map-elt streams-json-alist 'streams)))
+  (pcase-let* (((map streams) (helm-muki-twitch-api-get-json
+                               (helm-muki-twitch-stream-create-url game-name))))
     (seq-map
-     (lambda (alist)
-       (let-alist alist
+     (lambda (stream)
+       (pcase-let* (((map channel viewers) stream)
+                    ((map display_name
+                          followers
+                          views
+                          broadcaster_language
+                          url) channel))
          (cons (format "%s %s  %s %s %s"
-                       (propertize .channel.display_name
+                       (propertize display_name
                                    'face 'helm-muki-twitch-stream)
-                       .viewers
-                       .channel.followers
-                       .channel.views
-                       (if (null .channel.broadcaster_language)
+                       viewers
+                       followers
+                       views
+                       (if (null broadcaster_language)
                            ""
-                         .channel.broadcaster_language))
-               .channel.url)))
+                         broadcaster_language))
+               url)))
      streams)))
 
 (cl-defun helm-muki-twitch-stream-action-open (candidate)
@@ -183,8 +184,8 @@
   ((init :initform #'helm-muki-twitch-stream-init)
    (candidates :initform 'helm-muki-twitch-stream-candidates)
    (action :initform
-           (helm-make-actions
-            "Open" #'helm-muki-twitch-stream-action-open))))
+     (helm-make-actions
+      "Open" #'helm-muki-twitch-stream-action-open))))
 
 
 (defvar helm-source-muki-twitch-streams

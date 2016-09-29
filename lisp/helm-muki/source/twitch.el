@@ -10,23 +10,23 @@
   :group 'helm)
 
 (defcustom helm-muki-twitch-games-limit 100
-  "limit number of games candidate"
+  "Limit number of games candidate."
   :type 'integer)
 
 (defcustom helm-muki-twitch-streams-limit 100
-  "limit number of streams candidate"
+  "Limit number of streams candidate."
   :type 'integer)
 
 (defcustom helm-muki-twitch-additional-games
   ()
-  "names of game always shown in the games list"
+  "Names of game always shown in the games list."
   :type '(repeat string))
 
-(defcustom helm-muki-twitch-config-file 
+(defcustom helm-muki-twitch-config-file
   (expand-file-name
    "muki/twitch.el"
    user-emacs-directory)
-  ""
+  "Configuration file contains settings plist."
   :type 'file)
 
 (defface helm-muki-twitch-stream

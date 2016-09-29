@@ -9,28 +9,32 @@
   :group 'helm)
 
 (defcustom helm-muki-twitch-games-limit 100
-  "limit number of games candidate")
+  "limit number of games candidate"
+  :type 'integer)
 
 (defcustom helm-muki-twitch-streams-limit 100
-  "limit number of streams candidate")
+  "limit number of streams candidate"
+  :type 'integer)
 
 (defcustom helm-muki-twitch-additional-games
   ()
-  "names of game always shown in the games list")
+  "names of game always shown in the games list"
+  :type '(repeat string))
 
 (defcustom helm-muki-twitch-config-file 
   (expand-file-name
    "muki/twitch.el"
    user-emacs-directory)
-  "")
+  ""
+  :type 'file)
 
 (defface helm-muki-twitch-stream
-    '((t :inherit font-lock-variable-name-face))
+  '((t :inherit font-lock-variable-name-face))
   "face for helm muki twitch stream name"
   :group 'helm-muki-twitch)
 
 (defface helm-muki-twitch-game
-    '((t :inherit font-lock-function-name-face))
+  '((t :inherit font-lock-function-name-face))
   "face for helm muki twitch game name"
   :group 'helm-muki-twitch)
 

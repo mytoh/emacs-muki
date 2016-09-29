@@ -9,8 +9,8 @@
 (cl-defmacro muki:log (&rest messages)
   (declare (debug t))
   `(cl-locally
-       (message (concat (propertize ">> " 'face 'font-lock-doc-face)
-                        ,@messages) " ...")))
+    (message (concat (propertize ">> " 'face 'font-lock-doc-face)
+                     ,@messages) " ...")))
 
 (cl-defun muki:user-emacs-directory (&optional path)
   (if path
@@ -35,12 +35,12 @@
            (doc-string 3)
            (indent 2))
   `(cl-locally
-       (cl-defun ,hookfunc ()
-         ,@body)
-     ,@(seq-map
-        (lambda (name)
-          `(add-hook ',name (quote ,hookfunc)))
-        hooknames)))
+    (cl-defun ,hookfunc ()
+      ,@body)
+    ,@(seq-map
+       (lambda (name)
+         `(add-hook ',name (quote ,hookfunc)))
+       hooknames)))
 
 ;; (lazyload (triger-function ...) "filename" &rest body)
 ;; http://e-arrows.sakura.ne.jp/2010/03/macros-in-emacs-el.html
@@ -75,8 +75,8 @@
 (cl-defmacro muki:set-face-colours (face fore back)
   (declare (debug t))
   `(cl-locally
-       (set-face-foreground ,face ,fore)
-     (set-face-background ,face ,back)))
+    (set-face-foreground ,face ,fore)
+    (set-face-background ,face ,back)))
 
 
 ;;http://www.reddit.com/r/emacs/comments/umb24/expandfilename_is_good_for_path_concat_too/
@@ -109,9 +109,9 @@ emacs load path"
   (seq-doseq (f (directory-files parent-dir))
     (cl-letf ((name (expand-file-name f parent-dir)))
       (and (file-directory-p name)
-           (not (equal f ".."))
-           (not (equal f "."))
-           (cl-pushnew name load-path)))))
+         (not (equal f ".."))
+         (not (equal f "."))
+         (cl-pushnew name load-path)))))
 
 ;; kill other buffers
 (cl-defun kill-other-buffers ()
@@ -120,7 +120,7 @@ Don't mess with special buffers."
   (interactive)
   (seq-doseq (buffer (buffer-list))
     (unless (or (eql buffer (current-buffer))
-                (not (buffer-file-name buffer)))
+               (not (buffer-file-name buffer)))
       (kill-buffer buffer))))
 
 
@@ -350,6 +350,46 @@ Version 2016-01-16"
                     (expand-file-name dir)
                     "el\\'")))
     (seq-each #'byte-compile-file files)))
+
+(cl-defun muki:color-hsl->hex (h s l)
+  (pcase-let ((`(,hv ,sv ,lv)
+               (color-hsl-to-rgb (/ h 360.0)
+                                 (/ s 100.0)
+                                 (/ l 100.0))))
+    (color-rgb-to-hex hv sv lv)))
+
+(cl-defun switch-to-scratch-buffer ()
+  (interactive)
+  (switch-to-buffer
+   (get-buffer-create "*scratch*")))
+
+(cl-defun muki:switch-to-minibuffer-window ()
+  ;; spacemacs
+  "switch to minibuffer window (if active)"
+  (interactive)
+  (when (active-minibuffer-window)
+    (select-window (active-minibuffer-window))))
+
+(cl-defun muki:open-file-init-load ()
+  (interactive)
+  (find-file (expand-file-name
+              "init.d/init-load.el"
+              user-emacs-directory)))
+
+(cl-defun muki:open-file-package-registers ()
+  (interactive)
+  (find-file (expand-file-name
+              "package-manager/register/init.el"
+              muki-layer:root)))
+
+;;; Auto Byte-Compile Emacs Lisp Files
+;;; [[http://ergoemacs.org/emacs/emacs_byte_compile.html]]
+(cl-defun muki:byte-compile-current-buffer ()
+  "`byte-compile' current buffer if it's emacs-lisp-mode and compiled file exists."
+  (interactive)
+  (when (and (eq major-mode 'emacs-lisp-mode)
+           (file-exists-p (byte-compile-dest-file buffer-file-name)))
+    (byte-compile-file buffer-file-name)))
 
 (provide 'muki-core)
 

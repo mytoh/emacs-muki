@@ -10,7 +10,7 @@
 (defcustom helm-muki-directory-list
   '(("Home" . "~"))
   "default directory list"
-  :type 'list
+  :type '(alist :key-type string :value-type string)
   :group 'helm-muki)
 
 (defvar helm-muki-directory-candidates nil)

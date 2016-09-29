@@ -9,13 +9,15 @@
   '("conkeror")
   "default program list of
 \"program-name\" or (\"program-name\" . \"full-path\")"
-  :type 'list
+  :type '(repeat string)
   :group 'helm-muki)
 
 (defface helm-muki-program-name
     '((t :inherit font-lock-variable-name-face))
   "face for helm muki program name"
   :group 'helm-muki)
+
+(defvar helm-muki--program-candidates nil)
 
 (cl-defun helm-muki-program-create-candidates (init-list)
   (cl-letf* ((longest (helm-muki-string-longest
@@ -49,13 +51,13 @@
     (message "started %s" candidate)))
 
 (cl-defun helm-muki-program-init ()
-  (setq helm-muki-program-candidates
+  (setq helm-muki--program-candidates
         (helm-muki-program-create-candidates
          helm-muki-program-list)))
 
 (defclass helm-muki-program-source (helm-source-sync)
   ((init :initform #'helm-muki-program-init)
-   (candidates :initform 'helm-muki-program-candidates)
+   (candidates :initform 'helm-muki--program-candidates)
    (action :initform
            (helm-make-actions
             "Run" #'helm-muki-program-action-run))))

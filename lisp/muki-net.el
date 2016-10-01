@@ -97,55 +97,52 @@
                                                                 ?\ ))
                                            'face 'font-lock-keyword-face)
                                (propertize title 'face 'font-lock-string-face))))
-              (items->list (items mx)
-                           (colle:map
-                            (lambda (item)
-                              (cons
-                               (thread-first item
-                                 (xml-get-children 'title)
-                                 car cdr cdr car
-                                 (format-title mx))
-                               (thread-first item
-                                 (xml-get-children 'enclosure)
-                                 car
-                                 (xml-get-attribute 'url))))
-                            items)))
-    (cl-letf* ((root (with-current-buffer
-                         (url-retrieve-synchronously
-                          "http://feeds.backspace.fm/backspacefm")
-                       (libxml-parse-html-region
-                        (point-min) (point-max))))
-               (body (thread-first root
-                       (xml-get-children 'body)
-                       cl-first))
-               (rss (thread-first body
-                      (xml-get-children 'p)
-                      cl-first
-                      (xml-get-children 'rss)
-                      cl-first))
-               (channel (thread-first rss
-                          (xml-get-children 'channel)
-                          cl-first))
-               (items (thread-first channel
-                        (xml-get-children 'item)))
-               (maxitemlength (apply #'max
-                                     (mapcar
-                                      (lambda (item)
-                                        (thread-first item
-                                          (xml-get-children 'title)
-                                          car cdr cdr car
-                                          (split-string ":")
-                                          car
-                                          length))
-                                      items)))
-               (actions
-                `(("Open" . (lambda (url)
-                              (muki:play-mpv url))))))
+              (items->candidates(items mx)
+                                (colle:map
+                                 (lambda (item)
+                                   (pcase-let ((`(item ,_ (title ,_ ,title) . ,_)
+                                                item)
+                                               (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
+                                                (thread-first item
+                                                  (xml-get-children 'enclosure))))
+                                     (cons
+                                      (format-title title mx)
+                                      url)))
+                                 items)))
+    (pcase-let* ((root (with-current-buffer
+                           (url-retrieve-synchronously
+                            "http://feeds.backspace.fm/backspacefm")
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(,body . ,_) (thread-first root
+                                  (xml-get-children 'body)))
+                 (`(,p . ,_) (thread-first body
+                               (xml-get-children 'p)))
+                 (`(,rss . ,_) (thread-first p
+                                 (xml-get-children 'rss)))
+                 (`(,channel . ,_) (thread-first rss
+                                     (xml-get-children 'channel)))
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (thread-first item
+                                            (xml-get-children 'title)
+                                            car cdr cdr car
+                                            (split-string ":")
+                                            car
+                                            length))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
       (helm :sources `((name . "backspacefm")
-                       (candidates . ,(items->list items maxitemlength))
+                       (candidates . ,(items->candidates items maxitemlength))
                        (action . ,actions))
             :buffer "*backspacem fm*")
       ;; (insert (pp (car items)))
+      ;; (message (pp (car (items->candidates items maxitemlength))))
       )))
 
 (provide 'muki-net)

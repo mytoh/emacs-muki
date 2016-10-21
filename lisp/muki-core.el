@@ -19,7 +19,7 @@
 
 
 ;; http://github.com/juanjux/emacs-dotfiles
-(defmacro after (feature &rest body)
+(cl-defmacro after (feature . body)
   "After FEATURE is loaded, evaluate BODY."
   (declare (indent defun))
   `(with-eval-after-load ,feature ,@body))
@@ -30,7 +30,7 @@
 (cl-defun muki:add-hook-local (hook func &optional ap)
   (add-hook hook func ap 'local))
 
-(cl-defmacro defun-add-hook (hookfunc hooknames &rest body)
+(cl-defmacro defun-add-hook (hookfunc hooknames . body)
   (declare (debug t)
            (doc-string 3)
            (indent 2))
@@ -59,9 +59,9 @@
 
 (cl-defun muki:add-to-load-path (path)
   (and (file-exists-p path)
-       (cl-pushnew (expand-file-name
-                    (file-name-as-directory path))
-                   load-path)))
+     (cl-pushnew (expand-file-name
+                  (file-name-as-directory path))
+                 load-path)))
 
 ;; (cl-defmacro muki:expand-file-names (&rest names)
 ;;   (cl-labels ((rec (l ns)
@@ -109,9 +109,9 @@ emacs load path"
   (seq-doseq (f (directory-files parent-dir))
     (cl-letf ((name (expand-file-name f parent-dir)))
       (and (file-directory-p name)
-         (not (equal f ".."))
-         (not (equal f "."))
-         (cl-pushnew name load-path)))))
+           (not (equal f ".."))
+           (not (equal f "."))
+           (cl-pushnew name load-path)))))
 
 ;; kill other buffers
 (cl-defun kill-other-buffers ()
@@ -120,7 +120,7 @@ Don't mess with special buffers."
   (interactive)
   (seq-doseq (buffer (buffer-list))
     (unless (or (eql buffer (current-buffer))
-               (not (buffer-file-name buffer)))
+                (not (buffer-file-name buffer)))
       (kill-buffer buffer))))
 
 
@@ -379,7 +379,7 @@ Version 2016-01-16"
 (cl-defun muki:open-file-package-registers ()
   (interactive)
   (find-file (expand-file-name
-              "package-manager/register/init.el"
+              "package-registers/register/init.el"
               muki-layer:root)))
 
 ;;; Auto Byte-Compile Emacs Lisp Files
@@ -388,7 +388,7 @@ Version 2016-01-16"
   "`byte-compile' current buffer if it's emacs-lisp-mode and compiled file exists."
   (interactive)
   (when (and (eq major-mode 'emacs-lisp-mode)
-           (file-exists-p (byte-compile-dest-file buffer-file-name)))
+             (file-exists-p (byte-compile-dest-file buffer-file-name)))
     (byte-compile-file buffer-file-name)))
 
 (provide 'muki-core)

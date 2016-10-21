@@ -15,13 +15,13 @@
                        key)
      ,def))
 
-(cl-defmacro muki:evil-leader-define-local-leader-keys (keymap &rest bindings)
+(cl-defmacro muki:evil-leader-define-local-leader-keys (keymap . bindings)
   (and bindings
-       `(cl-locally
-            (muki:evil-leader-define-local-leader-key ,keymap
-                                                      ,(car bindings)
-                                                      ,(cadr bindings))
-          (muki:evil-leader-define-local-leader-keys ,keymap ,@(cddr bindings)))))
+     `(cl-locally
+       (muki:evil-leader-define-local-leader-key ,keymap
+                                               ,(car bindings)
+                                               ,(cadr bindings))
+       (muki:evil-leader-define-local-leader-keys ,keymap ,@(cddr bindings)))))
 
 ;; (muki:evil-leader-define-local-leader-keys emacs-lisp-mode-map
 ;;                                            "ee" #'eval-last-sexp
@@ -29,35 +29,35 @@
 
 (cl-defmacro muki:evil-leader-define-major-mode-key (mode key def)
   `(evil-leader/set-key-for-mode ',mode
-       ,(seq-concatenate 'string "m" key)
+     ,(seq-concatenate 'string "m" key)
      ,def))
 
-(cl-defmacro muki:evil-leader-define-major-mode-keys (mode &rest bindings)
+(cl-defmacro muki:evil-leader-define-major-mode-keys (mode . bindings)
   (and bindings
-       `(cl-locally
-            (muki:evil-leader-define-major-mode-key ,mode
-                                                    ,(car bindings)
-                                                    ,(cadr bindings))
-          (muki:evil-leader-define-major-mode-keys ,mode
-                                                   ,@(cddr bindings)))))
+     `(cl-locally
+       (muki:evil-leader-define-major-mode-key ,mode
+                                             ,(car bindings)
+                                             ,(cadr bindings))
+       (muki:evil-leader-define-major-mode-keys ,mode
+                                              ,@(cddr bindings)))))
 
 ;; (muki:evil-leader-define-major-mode-keys emacs-lisp-mode
 ;;                                          "ee" #'eval-last-sexp
 ;;                                          "eb" #'eval-buffer)
 
-(cl-defmacro muki:evil-leader-define-key-for-mode (mode-and-map &rest bindings)
+(cl-defmacro muki:evil-leader-define-key-for-mode (mode-and-map . bindings)
   (declare (debug t)
            (indent 1))
   (and bindings
-       `(cl-locally
-            (muki:evil-leader-define-major-mode-keys ,(car mode-and-map)
-                                                     ,@bindings)
-          (muki:evil-leader-define-local-leader-keys ,(cadr mode-and-map)
-                                                     ,@bindings)
-          (muki:evil-leader-define-key-for-mode ,mode-and-map)
-          ,@(cddr bindings))))
+     `(cl-locally
+       (muki:evil-leader-define-major-mode-keys ,(car mode-and-map)
+                                              ,@bindings)
+       (muki:evil-leader-define-local-leader-keys ,(cadr mode-and-map)
+                                                ,@bindings)
+       (muki:evil-leader-define-key-for-mode ,mode-and-map)
+       ,@(cddr bindings))))
 
-(cl-defmacro muki:evil-leader-define-key-for-modes (mode-map-list &rest bindings)
+(cl-defmacro muki:evil-leader-define-key-for-modes (mode-map-list . bindings)
   (declare (debug t)
            (indent 1))
   (unless (seq-empty-p mode-map-list)

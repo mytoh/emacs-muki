@@ -9,17 +9,17 @@
   `(add-key global-map ,@bindings))
 
 
-(cl-defmacro add-key (keymap &rest body)
+(cl-defmacro add-key (keymap . body)
   (declare (debug t)
            (indent 1))
   (and body
-       (cl-letf ((key (car body))
-                 (def (cadr body)))
-         `(cl-locally
-              (cl-etypecase ,key
-                (string (define-key ,keymap (kbd ,key) ,def))
-                (t (define-key ,keymap ,key ,def)))
-            (add-key ,keymap ,@(cddr body))))))
+     (cl-letf ((key (car body))
+               (def (cadr body)))
+       `(cl-locally
+         (cl-etypecase ,key
+           (string (define-key ,keymap (kbd ,key) ,def))
+           (t (define-key ,keymap ,key ,def)))
+         (add-key ,keymap ,@(cddr body))))))
 
 (provide 'muki-key)
 

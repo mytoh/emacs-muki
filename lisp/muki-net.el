@@ -57,7 +57,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                   (xml-get-attribute elm attr)))
+                                                        (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((doc (with-current-buffer
                         (url-retrieve-synchronously
@@ -186,8 +186,7 @@
       (helm :sources `((name . "yatteikifm")
                        (candidates . ,(items->candidates items maxitemlength))
                        (action . ,actions))
-            :buffer "*yatteiki fm*")
-      )))
+            :buffer "*yatteiki fm*"))))
 
 (provide 'muki-net)
 ;;; muki-net.el ends here

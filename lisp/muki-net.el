@@ -134,6 +134,59 @@
                        (candidates . ,(items->candidates items maxitemlength))
                        (action . ,actions))
             :buffer "*backspacem fm*"))))
+
+(cl-defun muki:yatteikifm ()
+  (interactive)
+  (cl-labels ((format-title (title subtitle mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 5 (- mx (length title)))
+                                          ?\ )
+                             (propertize subtitle 'face 'font-lock-doc-face)))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`(item ,_ (title ,_ ,title) . ,_)
+                                                 item)
+                                                (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
+                                                 (thread-first item
+                                                   (xml-get-children 'enclosure)))
+                                                (`((subtitle ,_ ,subtitle))
+                                                 (thread-first item
+                                                   (xml-get-children 'subtitle))))
+                                      (cons
+                                       (format-title title subtitle mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "https://yatteiki.fm/feed.xml")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  yat-root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (thread-first item
+                                            (xml-get-children 'title)
+                                            car cdr cdr car
+                                            length))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "yatteikifm")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*yatteiki fm*")
       )))
 
 (provide 'muki-net)

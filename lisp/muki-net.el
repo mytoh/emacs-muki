@@ -9,7 +9,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                   (xml-get-attribute elm attr)))
+                                                        (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((html (with-current-buffer
                          (url-retrieve-synchronously
@@ -169,7 +169,7 @@
                                (p ,_ ,_ ,_
                                   (rss ,_
                                        ,channel))))
-                  yat-root)
+                  root)
                  (items (thread-first channel
                           (xml-get-children 'item)))
                  (maxitemlength (apply #'max

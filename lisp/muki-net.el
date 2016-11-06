@@ -9,7 +9,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                        (xml-get-attribute elm attr)))
+                                                   (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((html (with-current-buffer
                          (url-retrieve-synchronously
@@ -81,14 +81,7 @@
 
 (cl-defun muki:backspacefm ()
   (interactive)
-  (cl-labels ((get-id (elm) (xml-get-children elm 'id))
-              (get-div (elm) (xml-get-children elm 'div))
-              (node-filter (elms target attr)
-                           (seq-filter
-                            (lambda (elm) (string-equal target
-                                                   (xml-get-attribute elm attr)))
-                            elms))
-              (format-title (title mx)
+  (cl-labels ((format-title (title mx)
                             (pcase-let ((`(,num ,title)
                                          (split-string title ":")))
                               (concat
@@ -140,9 +133,7 @@
       (helm :sources `((name . "backspacefm")
                        (candidates . ,(items->candidates items maxitemlength))
                        (action . ,actions))
-            :buffer "*backspacem fm*")
-      ;; (insert (pp (car items)))
-      ;; (message (pp (car (items->candidates items maxitemlength))))
+            :buffer "*backspacem fm*"))))
       )))
 
 (provide 'muki-net)

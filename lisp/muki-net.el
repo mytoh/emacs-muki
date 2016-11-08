@@ -241,5 +241,61 @@
                        (action . ,actions))
             :buffer "*biacco radio*"))))
 
+(cl-defun muki:mozaicfm ()
+  (interactive)
+  (cl-labels ((format-title (title subtitle mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             (propertize subtitle 'face 'font-lock-doc-face)))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
+                                                 (thread-first item
+                                                   (xml-get-children 'enclosure)))
+                                                (`((subtitle ,_ ,subtitle))
+                                                 (thread-first item
+                                                   (xml-get-children 'subtitle))))
+                                      (cons
+                                       (format-title (car (split-string title "|")) subtitle mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://feed.mozaic.fm")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (thread-first item
+                                            (xml-get-children 'title)
+                                            car cdr cdr car
+                                            (split-string "|")
+                                            car
+                                            length))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "mozaicfm")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*mozaic.fm*"))))
+
 (provide 'muki-net)
 ;;; muki-net.el ends here

@@ -240,10 +240,10 @@
                  (actions
                   `(("Open" . (lambda (url)
                                 (muki:play-mpv url))))))
-      (helm :sources `((name . "biacco-radio")
+      (helm :sources `((name . "sore-ha-sou")
                        (candidates . ,(items->candidates items maxitemlength))
                        (action . ,actions))
-            :buffer "*biacco radio*"))))
+            :buffer "sore ha sou"))))
 
 (cl-defun muki:mozaicfm ()
   (interactive)

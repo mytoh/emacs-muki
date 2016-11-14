@@ -2,6 +2,10 @@
 
 ;;; Code:
 
+(require 'xml)
+(declare-function colle:map "colle")
+(declare-function helm "helm")
+
 (cl-defun muki:shutup-stop (where)
   (interactive "sWhere?: ")
   (cl-labels ((get-id (elm) (xml-get-children elm 'id))
@@ -9,7 +13,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                        (xml-get-attribute elm attr)))
+                                                   (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((html (with-current-buffer
                          (url-retrieve-synchronously
@@ -57,7 +61,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                        (xml-get-attribute elm attr)))
+                                                   (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((doc (with-current-buffer
                         (url-retrieve-synchronously
@@ -188,7 +192,7 @@
                        (action . ,actions))
             :buffer "*yatteiki fm*"))))
 
-(cl-defun muki:biacco-radio ()
+(cl-defun muki:sore-ha-sou ()
   (interactive)
   (cl-labels ((format-title (title subtitle mx)
                             (concat
@@ -297,5 +301,114 @@
                        (action . ,actions))
             :buffer "*mozaic.fm*"))))
 
+(cl-defun muki:dexfm ()
+  (interactive)
+  (cl-labels ((format-title (title subtitle mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             (propertize subtitle 'face 'font-lock-doc-face)))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
+                                                 (thread-first item
+                                                   (xml-get-children 'enclosure)))
+                                                (`((subtitle ,_ ,subtitle))
+                                                 (thread-first item
+                                                   (xml-get-children 'subtitle))))
+                                      (cons
+                                       (format-title title
+                                                     (concat (car (split-string subtitle "。" ))
+                                                             "。")
+                                                     mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://feeds.feedburner.com/dexfm")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "dexfm")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*dex.fm*"))))
+
+(cl-defun muki:bootfm ()
+  (interactive)
+  (cl-labels ((format-title (title subtitle mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             (propertize subtitle 'face 'font-lock-doc-face)))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
+                                                 (thread-first item
+                                                   (xml-get-children 'enclosure)))
+                                                (`((subtitle ,_ ,subtitle))
+                                                 (thread-first item
+                                                   (xml-get-children 'subtitle))))
+                                      (cons
+                                       (format-title title
+                                                     subtitle mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "https://bootfm.github.io/feed.xml")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "bootfm")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*boot.fm*"))))
 (provide 'muki-net)
 ;;; muki-net.el ends here

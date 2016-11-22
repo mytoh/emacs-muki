@@ -508,16 +508,16 @@
                                     (pcase-let ((`((title ,_ ,title))
                                                  (thread-first item
                                                    (xml-get-children 'title)))
-                                                (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
-                                                 (thread-first item
-                                                   (xml-get-children 'enclosure)))
+                                                (url (thread-first item
+                                                       (xml-get-children 'enclosure)
+                                                       car
+                                                       (xml-get-attribute 'url)))
                                                 )
                                       (cons
                                        (format-title title mx)
                                        url)))
                                   items)))
     (pcase-let* ((feedurl "http://feeds.soundcloud.com/users/soundcloud:users:220484243/sounds.rss")
-                 
                  (root (with-current-buffer
                            (url-retrieve-synchronously
                             feedurl)

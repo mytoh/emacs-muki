@@ -139,7 +139,7 @@
              (point) (point-max)))
       (kill-buffer))
     (json-read-from-string
-     response-string)))
+     (decode-coding-string response-string 'utf-8))))
 
 (cl-defun helm-muki-twitch-get-client-id (file)
   (cl-letf ((info (with-temp-buffer

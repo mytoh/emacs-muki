@@ -1,9 +1,9 @@
 ;;; muki-net -*- lexical-binding: t; coding: utf-8; -*-
 
 ;;; Code:
-
 (require 'xml)
-(declare-function colle:map "colle")
+(require 'cl-lib)
+(require 'colle)
 (declare-function helm "helm")
 
 (cl-defun muki:shutup-stop (where)
@@ -13,7 +13,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                        (xml-get-attribute elm attr)))
+                                                   (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((html (with-current-buffer
                          (url-retrieve-synchronously
@@ -50,7 +50,7 @@
   (cl-letf ((cleaned-url (string-trim url)))
     (message "playing %s" cleaned-url)
     (start-process-shell-command "muki:play-mpv" cleaned-url
-                                 (concat "nohup " "mpv "
+                                 (concat "mpv "
                                          "\'" cleaned-url "\'"
                                          " &"))))
 (cl-defun muki:tumblr-image-url (where)
@@ -61,7 +61,7 @@
               (node-filter (elms target attr)
                            (seq-filter
                             (lambda (elm) (string-equal target
-                                                        (xml-get-attribute elm attr)))
+                                                   (xml-get-attribute elm attr)))
                             elms)))
     (cl-letf* ((doc (with-current-buffer
                         (url-retrieve-synchronously
@@ -472,6 +472,88 @@
                        (action . ,actions))
             :buffer "*functional geekery*")
       )))
+
+(cl-defun muki:thechangelog ()
+  (interactive)
+  (cl-labels ((format-title (title mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             ))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
+                                                 (thread-first item
+                                                   (xml-get-children 'enclosure)))
+                                                )
+                                      (cons
+                                       (format-title title mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "https://changelog.com/podcast/feed")
+                 ;; (root (with-current-buffer
+                 ;;           (url-retrieve-synchronously
+                 ;;            feedurl)
+                 ;;         (libxml-parse-html-region
+                 ;;          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  ,rss)))
+                  testchangelog)
+                 (fstitem (thread-first rss
+                            (xml-get-children 'channel)
+                            cl-first
+                            (xml-get-children 'item)
+                            cl-first))
+                 (fstenclosure (thread-first rss
+                                 (xml-get-children 'enclosure)))
+                 ;; (maxitemlength (apply #'max
+                 ;;                       (mapcar
+                 ;;                        (lambda (item)
+                 ;;                          (pcase-let ((`((title ,_ ,title))
+                 ;;                                       (xml-get-children item 'title)))
+                 ;;                            (length title)))
+                 ;;                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      ;; (cl-letf ((buf (get-buffer-create "testthechagelog")))
+      ;;   (with-current-buffer buf
+      ;;     (delete-region (point-min) (point-max))
+      ;;     (prin1 root (current-buffer))
+      ;;     (write-file "testchangelog")) )
+
+      ;; (message "%s" (thread-first rss
+      ;;                 (xml-get-children 'channel)))
+      (message "%s" (car (thread-first rss
+                           (xml-get-children 'item))))
+
+      ;; (helm :sources `((name . "thechangelog")
+      ;;                  (candidates . ,(items->candidates items maxitemlength))
+      ;;                  (action . ,actions))
+      ;;       :buffer "*thechangelog*")
+      )))
+
+;; (car testchangelog)
+;; (setq testchangelog (with-current-buffer
+;;                            (url-retrieve-synchronously
+;;  "https://changelog.com/podcast/feed"
+;;                             )
+;;                          (libxml-parse-html-region
+;;                           (point-min) (point-max))))
+
+;; (request "http://feed.mozaic.fm"
+;;         :parser (lambda () (libxml-parse-xml-region (point) (point-max)))
+;;         :success (cl-function
+;;                   (lambda (&key data &allow-other-keys)
+;;                     data)))
+
 (defun muki:nhk-world ()
   "[[http://askubuntu.com/questions/704612/nhk-live-streaming-not-available-on-this-browser][firefox - NHK Live streaming not available on this browser - Ask Ubuntu]]"
   (interactive)
@@ -491,7 +573,7 @@
                       car
                       (xml-get-children 'jstrm)
                       car
-                      cl-caddr)))
+                      caddr)))
     (muki:play-mpv url)))
 
 (defun muki:defn-audio ()
@@ -707,6 +789,321 @@
 ;;     (write-file "testchangelog"))
 ;;   (switch-to-buffer buf))
 
+(cl-defun muki:soundcloud->rss (url)
+  (pcase-let* ((root (with-current-buffer
+                         (url-retrieve-synchronously
+                          url)
+                       (libxml-parse-html-region
+                        (point-min) (point-max))))
+               (`(html ,_
+                       (body ,_
+                             (p . ,_)
+                             . ,infos))
+                root)
+               (metas (thread-first infos
+                        (xml-get-children 'meta)))
+               (meta (colle:filter
+                      (lambda (m)
+                        (cl-equalp "al:ios:url"
+                                   (xml-get-attribute m 'property)))
+                      metas))
+               (id 
+                (thread-first (car meta)
+                  (xml-get-attribute  'content)
+                  (split-string ":")
+                  colle:last)))
+    (concat
+     "http://feeds.soundcloud.com/users/soundcloud:users:"   
+     id
+     "/sounds.rss")))
+
+(defun muki:frontend-lunch ()
+  (interactive)
+  (cl-labels ((format-title (title subtitle mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             subtitle))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (url (thread-first item
+                                                       (xml-get-children 'enclosure)
+                                                       car
+                                                       (xml-get-attribute 'url)))
+                                                (`((subtitle ,_ ,subtitle))
+                                                 (thread-first item
+                                                   (xml-get-children 'subtitle))))
+                                      (cons
+                                       (format-title title subtitle mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://feeds.soundcloud.com/users/soundcloud:users:266716117/sounds.rss")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "frontend-lunch")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*nyanyanya radio*"))))
+
+(cl-defun muki:bilingual-news ()
+  (interactive)
+  (cl-labels ((format-title (title desc mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             (if (stringp desc)
+                                 (propertize desc 'face 'font-lock-keyword-face))
+                             ""))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (url (thread-first item
+                                                       (xml-get-children 'enclosure)
+                                                       car
+                                                       (xml-get-attribute 'url)))
+                                                (`((description ,_ ,desc))
+                                                 (thread-first item
+                                                   (xml-get-children 'description))))
+                                      (cons
+                                       (format-title title desc mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://bilingualnews.libsyn.com/rss")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               . ,body))
+                  root)
+                 (`(p ,_ ,_ ,_
+                      (rss ,_
+                           ,channel))
+                  (car body))
+                 (firstenclosure (thread-first body
+                                   (xml-get-children 'enclosure)
+                                   car))
+                 (firstitem (append (thread-first channel
+                                      (xml-get-children 'item)
+                                      car)
+                                    (list firstenclosure)))
+                 (items (cons firstitem
+                              (thread-first body
+                                (xml-get-children 'item))))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "*bilingual news*")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*bilingual news*"))))
+
+(cl-defun muki:clfreaks ()
+  (interactive)
+  (cl-labels ((format-title (title mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             ""))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let* ((`((title ,_ ,title))
+                                                  (thread-first item
+                                                    (xml-get-children 'title)))
+                                                 (url
+                                                  (pcase-let ((`(html ,_
+                                                                      (body ,_
+                                                                            . ,body))
+                                                               (with-temp-buffer
+                                                                 (insert (colle:third (car (xml-get-children item 'description))))
+                                                                 (libxml-parse-html-region
+                                                                  (point-min) (point-max)))))
+                                                    (thread-first (colle:find 
+                                                                   (lambda (p)
+                                                                     (if (listp (colle:third p))
+                                                                         (string-match-p "mp3$"
+                                                                                         (xml-get-attribute (colle:third p) 'href))
+                                                                       nil))
+                                                                   (xml-get-children body 'p))
+                                                      colle:third
+                                                      (xml-get-attribute 'href)))))
+                                      (cons
+                                       (format-title title mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://clfreaks.org/rss")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "*clfreaks*")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*clfreaks*"))))
+
+(cl-defun muki:washipo ()
+  (interactive)
+  (cl-labels ((format-title (title mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             ""))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (url (thread-first item
+                                                       (xml-get-children 'enclosure)
+                                                       car
+                                                       (xml-get-attribute 'url))))
+                                      (cons
+                                       (format-title title mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "https://washipo.nyoho.jp/podcast.rss")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "*washipo*")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*washipo*"))))
+
+(cl-defun muki:codelunchfm ()
+  (interactive)
+  (pcase-let*  ((feedurl "http://codelunch.fm/rss.xml")
+                (root (with-current-buffer
+                          (url-retrieve-synchronously
+                           feedurl)
+                        (mm-with-part (mm-dissect-buffer 'not-strict-mime)
+                          (libxml-parse-xml-region (point) (point-max)))))
+                
+                ;; (`(html ,_
+                ;;         (body ,_
+                ;;               (p ,_ ,_ ,_
+                ;;                  (rss ,_
+                ;;                       ,channel))))
+                ;;  root)
+                ;; (items (thread-first channel
+                ;;          (xml-get-children 'item)))
+                ;; (maxitemlength (apply #'max
+                ;;                       (mapcar
+                ;;                        (lambda (item)
+                ;;                          (pcase-let ((`((title ,_ ,title))
+                ;;                                       (xml-get-children item 'title)))
+                ;;                            (length title)))
+                ;;                        items)))
+                ;; (actions
+                ;;  `(("Open" . (lambda (url)
+                ;;                (muki:play-mpv url)))))
+                )
+    (message "%s" root)
+    )
+  )
+
+(cl-defun muki:nixers ()
+  "https://podcast.nixers.net/feed/feed.xml")
+
+(cl-defun muki:atp ()
+  "http://atp.fm/episodes?format=rss")
+
+(cl-defun muki:roguelike-radio ()
+  "http://feeds.feedburner.com/RoguelikeRadio")
+
+(cl-defun muki:gnuworldorder ()
+  "http://gnuworldorder.info/spx.atom.xml")
+
+(cl-defun muki:norfolk-winters ()
+  "https://media.norfolkwinters.com/podcast-ogg.xml")
+
+(cl-defun muki:late-night-linux ()
+  "https://latenightlinux.com/feed/ogg")
+
+(cl-defun muki:kumocast ()
+  "http://feeds.feedburner.com/tumblr/IkZP")
 
 (provide 'muki-net)
 ;;; muki-net.el ends here

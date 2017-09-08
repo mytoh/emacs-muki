@@ -5,7 +5,7 @@
 (cl-defun muki:expand-path-huone (name)
   (expand-file-name
    name
-   (if-let ((huone (getenv "HUONE")))
+   (if-let* ((huone (getenv "HUONE")))
        huone
      (expand-file-name "~/huone"))))
 

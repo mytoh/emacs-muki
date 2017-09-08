@@ -157,11 +157,14 @@
                           followers
                           views
                           broadcaster_language
-                          url) channel))
-         (cons (format "%s %s  %s %s %s"
+                          url
+                          status)
+                     channel))
+         (cons (format "%s  %s %s %s %s %s"
                        (propertize display_name
                                    'face 'helm-muki-twitch-stream)
                        viewers
+                       (propertize status 'face 'font-lock-keyword-face)
                        followers
                        views
                        (if (null broadcaster_language)
@@ -176,6 +179,8 @@
     (cl-letf ((command (seq-concatenate 'string
                                         "mpv "
                                         " --ytdl=yes "
+                                        " --speed 1 "
+                                        " --ytdl-format='360p' "
                                         " '" url "'"
                                         " &")))
       (start-process-shell-command "helm-muki-twitch" nil command))))
@@ -209,3 +214,5 @@
 
 ;;(helm-muki-twitch-stream-create-url "Dark Souls III")
 ;; (helm-muki-twitch-api-get-json "https://api.twitch.tv/kraken/channels/hebo" )
+
+;; TODO region filtering 

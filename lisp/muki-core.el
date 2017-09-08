@@ -59,9 +59,9 @@
 
 (cl-defun muki:add-to-load-path (path)
   (and (file-exists-p path)
-     (cl-pushnew (expand-file-name
-                  (file-name-as-directory path))
-                 load-path)))
+       (cl-pushnew (expand-file-name
+                    (file-name-as-directory path))
+                   load-path)))
 
 ;; (cl-defmacro muki:expand-file-names (&rest names)
 ;;   (cl-labels ((rec (l ns)
@@ -388,8 +388,9 @@ Version 2016-01-16"
   "`byte-compile' current buffer if it's emacs-lisp-mode and compiled file exists."
   (interactive)
   (when (and (eq major-mode 'emacs-lisp-mode)
-             (file-exists-p (byte-compile-dest-file buffer-file-name)))
+           (file-exists-p (byte-compile-dest-file buffer-file-name)))
     (byte-compile-file buffer-file-name)))
+
 
 (provide 'muki-core)
 

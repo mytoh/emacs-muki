@@ -23,10 +23,13 @@
   (setq debug-on-error t)
   (seq-each
    (clambda (n)
-       (muki-layer:load category n))
+     (muki-layer:load category n))
    names)
   (setq debug-on-error nil)
   t)
+
+;; TODO: implement autoloading for layers, with find-file-hook?
+(cl-defun muki-layer:hotload (mode layer))
 
 (provide 'muki-layer)
 

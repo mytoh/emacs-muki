@@ -4,6 +4,7 @@
 (require 'helm)
 (require 'helm-bookmark)
 (require 'helm-files)
+(require 'helm-for-files)
 
 (require 'helm-muki-directory "helm-muki/source/directory")
 (require 'helm-muki-program "helm-muki/source/program")

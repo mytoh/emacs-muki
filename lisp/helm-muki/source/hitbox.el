@@ -23,10 +23,10 @@
   (cl-letf ((content nil))
     (with-current-buffer (url-retrieve-synchronously url 'silent 'inhibit-cookies)
       (save-mark-and-excursion
-       (goto-char (1+ url-http-end-of-headers))
-       (setq content (buffer-substring-no-properties
-                      (point) (point-max)))
-       (kill-buffer)))
+        (goto-char (1+ url-http-end-of-headers))
+        (setq content (buffer-substring-no-properties
+                       (point) (point-max)))
+        (kill-buffer)))
     (json-read-from-string
      content)))
 
@@ -35,36 +35,36 @@
                      "http://api.hitbox.tv/games?liveonly=true&limit=500"
                    "http://api.hitbox.tv/games&limit=500")))
     (let-alist (muki.hitbox:api-json url)
-      (cl-letf ((categories .categories))
-        (seq-map
-         (lambda (g)
-           (cons
+      (seq-map
+       (lambda (g)
+         (cons
+          (let-alist g
             (format "%s %s"
-                    (cdr (assoc 'category_name g))
-                    (cdr (assoc 'category_viewers g)))
-            g))
-         categories)))))
+                    .category_name 
+                    .category_viewers))
+          g))
+       .categories))))
 
 (cl-defun muki.hitbox:api-lives (game)
   (cl-letf ((url (concat
                   "http://api.hitbox.tv/media/live/list?limit=200&game="
                   (cdr (assoc 'category_seo_key game)))))
     (let-alist (muki.hitbox:api-json url)
-      (cl-letf ((lives .livestream))
-        (seq-map
-         (lambda (l)
-           (cons
+      (seq-map
+       (lambda (l)
+         (cons
+          (let-alist l
             (format "%s %s"
-                    (cdr (assoc 'media_user_name l))
-                    (cdr (assoc 'media_views l)))
-            l))
-         lives)))))
+                    .media_user_name
+                    .media_views))
+          l))
+       .livestream))))
 
 (cl-defun muki.hitbox:action-open-game (candidate)
   (helm :sources
-        (muki.hitbox:build-source-lives candidate)
-        :buffer "*hitbox lives*"
-        :prompt "Lives: "))
+    (muki.hitbox:build-source-lives candidate)
+    :buffer "*hitbox lives*"
+    :prompt "Lives: "))
 
 (cl-defun muki.hitbox:action-play-live (candidate)
   (muki.hitbox:play

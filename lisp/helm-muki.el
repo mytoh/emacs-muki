@@ -13,6 +13,7 @@
 (require 'helm-muki-layer "helm-muki/source/layer")
 (require 'helm-muki-twitch"helm-muki/source/twitch")
 (require 'muki.hitbox "helm-muki/source/hitbox")
+(require 'helm-muki-pocket  "helm-muki/source/pocket")
 
 ;;;; group
 (defgroup helm-muki nil
@@ -87,6 +88,13 @@
   (helm :sources '(helm-source-muki-twitch)
         :buffer "*helm twitch*"
         :prompt "Game: "))
+
+;;;###autoload
+(cl-defun helm-muki-pocket ()
+  (interactive)
+  (helm :sources '(helm-source-muki-pocket)
+        :buffer "*helm pocket*"
+        :prompt "Item: "))
 
 ;;; provide
 (provide 'helm-muki)

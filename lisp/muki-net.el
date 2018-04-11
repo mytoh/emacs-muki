@@ -46,6 +46,10 @@
       (muki:play-mpv url))))
 
 (cl-defun muki:play-mpv (url)
+  ;; (interactive (list (read-string "Url: " (pcase (current-kill 0)
+  ;;                                           (`nil "")
+  ;;                                           (default default))
+  ;;                                 nil)))
   (interactive "sUrl: ")
   (cl-letf ((cleaned-url (string-trim url)))
     (message "playing %s" cleaned-url)
@@ -85,23 +89,28 @@
 
 (cl-defun muki:backspacefm ()
   (interactive)
-  (cl-labels ((format-title (title mx)
-                            (pcase-let ((`(,num ,title)
-                                         (split-string title ":")))
-                              (concat
-                               (propertize (concat num
-                                                   (make-string (1+ (abs (- mx (length num))))
-                                                                ?\ ))
-                                           'face 'font-lock-keyword-face)
-                               (propertize title 'face 'font-lock-string-face))))
+  (cl-labels ((format-title (str mx)
+                            ;; taken from s-contains?
+                            (if (string-match-p "[：:]" str)
+                                (pcase-let ((`(,num ,title)
+                                             (split-string str "[：:]")))
+                                  (concat
+
+                                   (propertize (concat num
+                                                       (make-string (1+ (abs (- mx (length num))))
+                                                                    ?\ ))
+                                               'face 'font-lock-keyword-face)
+                                   (propertize title 'face 'font-lock-string-face)))
+                              (propertize str 'face 'font-lock-string-face)))
               (items->candidates(items mx)
                                 (colle:map
                                  (lambda (item)
-                                   (pcase-let ((`(item ,_ (title ,_ ,title) . ,_)
-                                                item)
-                                               (`((enclosure ((url . ,url) . ,_) . ,_) . ,_)
-                                                (thread-first item
-                                                  (xml-get-children 'enclosure))))
+                                   ;; ((title nil #241:Web 3.0を考える))
+                                   (pcase-let ((`((title ,_ ,title))
+                                                (xml-get-children item 'title))
+                                               ;; ((enclosure ((url . http://tracking.feedpress.it/link/6091/8821701/backspace-241.mp3) (type . audio/mpeg) (length . 89194870))))
+                                               (`((enclosure ((url . ,url) . ,_)))
+                                                (xml-get-children item 'enclosure)))
                                      (cons
                                       (format-title title mx)
                                       url)))
@@ -127,7 +136,7 @@
                                           (thread-first item
                                             (xml-get-children 'title)
                                             car cdr cdr car
-                                            (split-string ":")
+                                            (split-string "[：:]")
                                             car
                                             length))
                                         items)))
@@ -1084,6 +1093,108 @@
     )
   )
 
+(cl-defun muki:wadafm ()
+  (interactive)
+  (cl-labels ((format-title (title mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             ""))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (url (thread-first item
+                                                       (xml-get-children 'enclosure)
+                                                       car
+                                                       (xml-get-attribute 'url))))
+                                      (cons
+                                       (format-title title mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://feed.wada.fm/wadafm")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "*wadafm*")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*wadafm*"))))
+
+(cl-defun muki:dandyfm ()
+  (interactive)
+  (cl-labels ((format-title (title mx)
+                            (concat
+                             (propertize title 'face 'font-lock-string-face)
+                             (make-string (+ 3 (- mx (length title)))
+                                          ?\ )
+                             ""))
+              (items->candidates (items mx)
+                                 (colle:map
+                                  (lambda (item)
+                                    (pcase-let ((`((title ,_ ,title))
+                                                 (thread-first item
+                                                   (xml-get-children 'title)))
+                                                (url (thread-first item
+                                                       (xml-get-children 'enclosure)
+                                                       car
+                                                       (xml-get-attribute 'url))))
+                                      (cons
+                                       (format-title title mx)
+                                       url)))
+                                  items)))
+    (pcase-let* ((feedurl "http://feed.dandy.fm/dandyfm")
+                 (root (with-current-buffer
+                           (url-retrieve-synchronously
+                            feedurl)
+                         (libxml-parse-html-region
+                          (point-min) (point-max))))
+                 (`(html ,_
+                         (body ,_
+                               (p ,_ ,_ ,_
+                                  (rss ,_
+                                       ,channel))))
+                  root)
+                 (items (thread-first channel
+                          (xml-get-children 'item)))
+                 (maxitemlength (apply #'max
+                                       (mapcar
+                                        (lambda (item)
+                                          (pcase-let ((`((title ,_ ,title))
+                                                       (xml-get-children item 'title)))
+                                            (length title)))
+                                        items)))
+                 (actions
+                  `(("Open" . (lambda (url)
+                                (muki:play-mpv url))))))
+      (helm :sources `((name . "*dandyfm*")
+                       (candidates . ,(items->candidates items maxitemlength))
+                       (action . ,actions))
+            :buffer "*dandyfm*"))))
+
 (cl-defun muki:nixers ()
   "https://podcast.nixers.net/feed/feed.xml")
 
@@ -1104,6 +1215,9 @@
 
 (cl-defun muki:kumocast ()
   "http://feeds.feedburner.com/tumblr/IkZP")
+
+(cl-defun muki:turingcompletefm ()
+  "https://turingcomplete.fm/")
 
 (provide 'muki-net)
 ;;; muki-net.el ends here

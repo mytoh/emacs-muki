@@ -1219,5 +1219,14 @@
 (cl-defun muki:turingcompletefm ()
   "https://turingcomplete.fm/")
 
+(cl-defun muki:misreadingchat ()
+  "https://misreading.chat/")
+
+(cl-defun muki:ruby-rogues ()
+  "http://feeds.feedwrench.com/RubyRogues.rss")
+
+(cl-defun muki:rock-bottom ()
+  "http://rockbottom.main.jp/rbpc/category/podcast/feed/")
+
 (provide 'muki-net)
 ;;; muki-net.el ends here
